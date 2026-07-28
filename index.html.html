@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>เครื่องมือวิเคราะห์ Demand & Supply</title>
+<style>
+  :root{
+    --ink:#1c2230;
+    --paper:#f6f3ec;
+    --panel:#ffffff;
+    --board:#16213a;
+    --board-line:#2b3a5c;
+    --gold:#c98a2c;
+    --rule:#d8d2c2;
+    --cs:#3f7cd6;
+    --ps:#e0a72e;
+    --tax:#2e9e6b;
+    --sub:#a24fd6;
+    --dwl:#d64545;
+    --muted:#6b7280;
+    font-family:'Georgia', 'Iowan Old Style', serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Georgia', 'Iowan Old Style', serif;
+  }
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 22px 60px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  header h1{
+    font-size:26px;
+    letter-spacing:.2px;
+    margin:0;
+    font-weight:700;
+  }
+  header .sub{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12.5px;
+    color:var(--muted);
+    letter-spacing:.4px;
+    text-transform:uppercase;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:22px;
+  }
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:18px 18px 20px;
+  }
+  .panel h2{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color:var(--muted);
+    margin:0 0 14px;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:8px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    margin-bottom:4px;
+  }
+  .field label span.val{
+    font-variant-numeric:tabular-nums;
+    color:var(--ink);
+    font-weight:700;
+  }
+  input[type=range]{
+    width:100%;
+    accent-color:var(--ink);
+  }
+  .grp-title{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    margin:16px 0 8px;
+    color:var(--ink);
+  }
+  .grp-title:first-child{margin-top:0;}
+  .elastic-note{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:-6px;
+    margin-bottom:12px;
+  }
+  select{
+    width:100%;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    padding:7px 8px;
+    border:1px solid var(--rule);
+    background:#fff;
+    color:var(--ink);
+  }
+  .policy-amount{margin-top:10px;}
+  .warn{
+    background:#fbeaea;
+    border:1px solid #e3b6b6;
+    color:#8a2e2e;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12.5px;
+    padding:8px 10px;
+    margin-top:10px;
+    display:none;
+  }
+  #reset-btn{
+    width:100%;
+    margin-top:18px;
+    padding:10px 10px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:.3px;
+    background:var(--ink);
+    color:#f6f3ec;
+    border:none;
+    border-radius:2px;
+    cursor:pointer;
+    transition:opacity .15s ease;
+  }
+  #reset-btn:hover{opacity:.85;}
+  #reset-btn:active{opacity:.7;}
+  .graph-panel{
+    background:var(--board);
+    border-radius:3px;
+    padding:14px;
+  }
+  svg{width:100%;height:auto;display:block;}
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-top:10px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    color:#dfe4ef;
+  }
+  .legend .sw{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .legend .box{
+    width:12px;height:12px;
+    border-radius:2px;
+    display:inline-block;
+  }
+  .results{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:700px){
+    .results{grid-template-columns:1fr;}
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+  }
+  table caption{
+    text-align:left;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--muted);
+    margin-bottom:8px;
+    caption-side:top;
+  }
+  td{
+    padding:6px 4px;
+    border-bottom:1px solid var(--rule);
+  }
+  td.k{color:var(--muted);}
+  td.v{
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    font-weight:700;
+  }
+  tr.hi td{color:var(--ink);}
+  tr.tax td.v{color:var(--tax);}
+  tr.sub td.v{color:var(--sub);}
+  tr.dwl td.v{color:var(--dwl);}
+  .foot-note{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:14px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Demand &amp; Supply Studio</h1>
+    <div class="sub">Equilibrium · Surplus · Elasticity · Tax &amp; Subsidy</div>
+  </header>
+
+  <div class="layout">
+    <!-- CONTROLS -->
+    <div class="panel">
+      <h2>ตั้งค่ากราฟ</h2>
+
+      <div class="grp-title">Demand: P = a − b·Q</div>
+      <div class="field">
+        <label>a (จุดตัดแกน P) <span class="val" id="val-a">100</span></label>
+        <input type="range" id="a" min="40" max="220" step="1" value="100">
+      </div>
+      <div class="field">
+        <label>b (ความชัน) <span class="val" id="val-b">1.0</span></label>
+        <input type="range" id="b" min="0.2" max="4" step="0.1" value="1.0">
+      </div>
+      <div class="elastic-note" id="ed-note">Ed ที่จุดดุลยภาพ: —</div>
+
+      <div class="grp-title">Supply: P = c + d·Q</div>
+      <div class="field">
+        <label>c (จุดตัดแกน P) <span class="val" id="val-c">10</span></label>
+        <input type="range" id="c" min="0" max="150" step="1" value="10">
+      </div>
+      <div class="field">
+        <label>d (ความชัน) <span class="val" id="val-d">1.0</span></label>
+        <input type="range" id="d" min="0.2" max="4" step="0.1" value="1.0">
+      </div>
+      <div class="elastic-note" id="es-note">Es ที่จุดดุลยภาพ: —</div>
+
+      <div class="grp-title">นโยบายรัฐ</div>
+      <select id="policy">
+        <option value="none">ไม่มีนโยบาย</option>
+        <option value="tax">เก็บภาษี (Tax)</option>
+        <option value="subsidy">ให้เงินอุดหนุน (Subsidy)</option>
+      </select>
+      <div class="field policy-amount" id="amount-field" style="display:none;">
+        <label id="amount-label">จำนวนต่อหน่วย <span class="val" id="val-amount">10</span></label>
+        <input type="range" id="amount" min="0" max="80" step="1" value="10">
+      </div>
+      <div class="warn" id="warn-box"></div>
+
+      <button id="reset-btn" type="button">↺ กลับสู่ค่าเริ่มต้น (จุดตัดกึ่งกลางกราฟ)</button>
+    </div>
+
+    <!-- GRAPH + RESULTS -->
+    <div>
+      <div class="graph-panel">
+        <svg id="chart" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="results">
+        <table>
+          <caption>จุดดุลยภาพเดิม (ไม่มีนโยบาย)</caption>
+          <tbody id="tbl-eq"></tbody>
+        </table>
+        <table>
+          <caption id="tbl-policy-cap">ผลของนโยบาย</caption>
+          <tbody id="tbl-policy"></tbody>
+        </table>
+      </div>
+
+      <div class="foot-note">
+        CS = Consumer Surplus · PS = Producer Surplus · TS = Total Surplus · DWL = Deadweight Loss<br>
+        ลาก slider ด้านซ้ายเพื่อปรับความชันของเส้น Demand/Supply (ความชันน้อย = ยืดหยุ่นมาก, ความชันมาก = ยืดหยุ่นน้อย) แล้วกราฟ พื้นที่ และตารางจะคำนวณใหม่ทันที
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const els = {
+  a: document.getElementById('a'), b: document.getElementById('b'),
+  c: document.getElementById('c'), d: document.getElementById('d'),
+  policy: document.getElementById('policy'), amount: document.getElementById('amount'),
+  amountField: document.getElementById('amount-field'), amountLabel: document.getElementById('amount-label'),
+  warn: document.getElementById('warn-box'),
+  svg: document.getElementById('chart'),
+  legend: document.getElementById('legend'),
+  tblEq: document.getElementById('tbl-eq'),
+  tblPolicy: document.getElementById('tbl-policy'),
+  tblPolicyCap: document.getElementById('tbl-policy-cap'),
+};
+
+const fmt = n => (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+
+function readState(){
+  return {
+    a: parseFloat(els.a.value), b: parseFloat(els.b.value),
+    c: parseFloat(els.c.value), d: parseFloat(els.d.value),
+    policy: els.policy.value, amount: parseFloat(els.amount.value)
+  };
+}
+
+function compute(s){
+  const {a,b,c,d,policy,amount} = s;
+  const out = {valid:true};
+
+  if (a<=c){ out.valid=false; return out; }
+
+  // base equilibrium
+  const Qe = (a-c)/(b+d);
+  const Pe = a - b*Qe;
+  out.Qe = Qe; out.Pe = Pe;
+  out.CSe = 0.5*(a-Pe)*Qe;
+  out.PSe = 0.5*(Pe-c)*Qe;
+  out.TSe = out.CSe + out.PSe;
+  out.Ed = (-1/b) * (Pe/Qe);
+  out.Es = (1/d) * (Pe/Qe);
+
+  out.policy = policy;
+  if (policy === 'tax'){
+    const t = amount;
+    const Qt = (a-c-t)/(b+d);
+    if (Qt <= 0){ out.policyValid=false; return out; }
+    const Pb = a - b*Qt;
+    const Ps = Pb - t;
+    out.Q2=Qt; out.Pb=Pb; out.Ps=Ps;
+    out.CS2 = 0.5*(a-Pb)*Qt;
+    out.PS2 = 0.5*(Ps-c)*Qt;
+    out.govt = t*Qt;             // tax revenue
+    out.DWL = 0.5*t*(Qe-Qt);
+    out.TS2 = out.CS2 + out.PS2 + out.govt;
+    out.policyValid = true;
+  } else if (policy === 'subsidy'){
+    const sub = amount;
+    const Qs = (a-c+sub)/(b+d);
+    const Pb = a - b*Qs;
+    const Ps = Pb + sub;
+    out.Q2=Qs; out.Pb=Pb; out.Ps=Ps;
+    out.CS2 = 0.5*(a-Pb)*Qs;
+    out.PS2 = 0.5*(Ps-c)*Qs;
+    out.govt = sub*Qs;           // subsidy cost
+    out.DWL = 0.5*sub*(Qs-Qe);
+    out.TS2 = out.CS2 + out.PS2 - out.govt;
+    out.policyValid = true;
+  } else {
+    out.policyValid = false;
+  }
+  return out;
+}
+
+function buildLegend(policy){
+  const items = [
+    {c:'var(--cs)', l:'Consumer Surplus'},
+    {c:'var(--ps)', l:'Producer Surplus'},
+  ];
+  if (policy==='tax') items.push({c:'var(--tax)', l:'ภาษีที่รัฐเก็บได้ (Tax Revenue)'});
+  if (policy==='subsidy') items.push({c:'var(--sub)', l:'ต้นทุนเงินอุดหนุน (Subsidy Cost)'});
+  if (policy!=='none') items.push({c:'var(--dwl)', l:'Deadweight Loss'});
+  els.legend.innerHTML = items.map(i=>`<span class="sw"><span class="box" style="background:${i.c}"></span>${i.l}</span>`).join('');
+}
+
+function draw(s, r){
+  const W=900,H=560, m={l:70,r:40,t:30,b:60};
+  const plotW=W-m.l-m.r, plotH=H-m.t-m.b;
+
+  if (!r.valid){
+    els.svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="#e7c9c9" font-family="Helvetica" font-size="16" text-anchor="middle">ไม่มีจุดดุลยภาพ: a ต้องมากกว่า c</text>`;
+    return;
+  }
+
+  const {a,b,c,d} = s;
+  const Qd0 = a/b;
+
+  // Axis scale is anchored to the market size (a, c) — NOT to the slopes (b, d).
+  // This keeps each line's pixel position dependent only on its own equation,
+  // so dragging the demand slope never rescales (and appears to "move") the
+  // supply line, and vice versa. Extreme slope combinations still get a
+  // safety-net expansion so the equilibrium point never falls off-canvas.
+  const baseMaxQ = Math.max(a - c, 1) * 1.6;
+  let maxQ = Math.max(baseMaxQ, r.Qe * 1.15, (r.policyValid ? r.Q2 * 1.15 : 0));
+
+  // maxP is anchored to the SLIDER's max value for 'a', not the current value
+  // of 'a' itself. If it were proportional to the live 'a', the point (0,a)
+  // would always land at the same fixed fraction of the chart height —
+  // making the demand intercept look frozen no matter how far you dragged it.
+  const A_LIMIT = parseFloat(els.a.max);
+  let maxP = A_LIMIT * 1.15;
+  const supEndPCheck = c + d * maxQ;
+  if (supEndPCheck > maxP) maxP = supEndPCheck * 1.05;
+
+  const X = Q => m.l + (Q/maxQ)*plotW;
+  const Y = P => m.t + plotH - (Math.max(P,0)/maxP)*plotH;
+
+  const demEndQ = Math.min(Qd0, maxQ);
+  const demEndP = a - b*demEndQ;
+  const supEndQ = maxQ;
+  const supEndP = c + d*maxQ;
+
+  let svg = '';
+
+  // grid / axes
+  svg += `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(maxQ)}" y2="${Y(0)}" stroke="#3a4c74" stroke-width="1.4"/>`;
+  svg += `<line x1="${X(0)}" y1="${Y(0)}" x2="${X(0)}" y2="${Y(maxP)}" stroke="#3a4c74" stroke-width="1.4"/>`;
+  svg += `<text x="${X(maxQ)}" y="${Y(0)+22}" fill="#8fa0c4" font-family="Helvetica" font-size="13" text-anchor="end">Quantity (Q)</text>`;
+  svg += `<text x="${X(0)-14}" y="${Y(maxP)+4}" fill="#8fa0c4" font-family="Helvetica" font-size="13" text-anchor="end">Price (P)</text>`;
+
+  // ---- shaded areas (drawn before lines so lines sit on top) ----
+  const P0 = r.Pe, Q0 = r.Qe;
+
+  if (r.policy==='none' || !r.policyValid){
+    // CS triangle
+    svg += `<polygon points="${X(0)},${Y(a)} ${X(Q0)},${Y(P0)} ${X(0)},${Y(P0)}" fill="var(--cs)" fill-opacity="0.55"/>`;
+    // PS triangle
+    svg += `<polygon points="${X(0)},${Y(c)} ${X(Q0)},${Y(P0)} ${X(0)},${Y(P0)}" fill="var(--ps)" fill-opacity="0.55"/>`;
+  } else {
+    const {Q2,Pb,Ps} = r;
+    // CS (new, smaller/larger depending)
+    svg += `<polygon points="${X(0)},${Y(a)} ${X(Q2)},${Y(Pb)} ${X(0)},${Y(Pb)}" fill="var(--cs)" fill-opacity="0.55"/>`;
+    // PS (new)
+    svg += `<polygon points="${X(0)},${Y(c)} ${X(Q2)},${Y(Ps)} ${X(0)},${Y(Ps)}" fill="var(--ps)" fill-opacity="0.55"/>`;
+    // government rectangle (tax revenue or subsidy cost)
+    const govColor = r.policy==='tax' ? 'var(--tax)' : 'var(--sub)';
+    svg += `<polygon points="${X(0)},${Y(Ps)} ${X(Q2)},${Y(Ps)} ${X(Q2)},${Y(Pb)} ${X(0)},${Y(Pb)}" fill="${govColor}" fill-opacity="0.55"/>`;
+    // DWL triangle
+    svg += `<polygon points="${X(Q2)},${Y(Pb)} ${X(Q2)},${Y(Ps)} ${X(Q0)},${Y(P0)}" fill="var(--dwl)" fill-opacity="0.6"/>`;
+  }
+
+  // demand & supply lines (original)
+  svg += `<line x1="${X(0)}" y1="${Y(a)}" x2="${X(demEndQ)}" y2="${Y(demEndP)}" stroke="#e8ecf5" stroke-width="2.6"/>`;
+  svg += `<line x1="${X(0)}" y1="${Y(c)}" x2="${X(supEndQ)}" y2="${Y(supEndP)}" stroke="#e8ecf5" stroke-width="2.6"/>`;
+  svg += `<text x="${X(demEndQ)-4}" y="${Y(demEndP)-8}" fill="#e8ecf5" font-family="Helvetica" font-size="13" text-anchor="end">D</text>`;
+  svg += `<text x="${X(supEndQ)-6}" y="${Y(supEndP)+16}" fill="#e8ecf5" font-family="Helvetica" font-size="13" text-anchor="end">S</text>`;
+
+  // shifted supply/demand for policy (dashed)
+  if (r.policyValid){
+    if (r.policy==='tax'){
+      const t = s.amount;
+      const shEndP = c+t+d*maxQ;
+      svg += `<line x1="${X(0)}" y1="${Y(c+t)}" x2="${X(maxQ)}" y2="${Y(shEndP)}" stroke="var(--tax)" stroke-width="2" stroke-dasharray="6 5"/>`;
+      svg += `<text x="${X(maxQ)-6}" y="${Y(shEndP)+16}" fill="var(--tax)" font-family="Helvetica" font-size="12" text-anchor="end">S + tax</text>`;
+    } else {
+      const sub = s.amount;
+      const shEndP = (c-sub)+d*maxQ;
+      svg += `<line x1="${X(0)}" y1="${Y(c-sub)}" x2="${X(maxQ)}" y2="${Y(shEndP)}" stroke="var(--sub)" stroke-width="2" stroke-dasharray="6 5"/>`;
+      svg += `<text x="${X(maxQ)-6}" y="${Y(shEndP)-8}" fill="var(--sub)" font-family="Helvetica" font-size="12" text-anchor="end">S − subsidy</text>`;
+    }
+  }
+
+  // dotted guides + points
+  function guide(Q,P,color,label){
+    svg += `<line x1="${X(Q)}" y1="${Y(P)}" x2="${X(Q)}" y2="${Y(0)}" stroke="${color}" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
+    svg += `<line x1="${X(0)}" y1="${Y(P)}" x2="${X(Q)}" y2="${Y(P)}" stroke="${color}" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
+    svg += `<circle cx="${X(Q)}" cy="${Y(P)}" r="4.5" fill="${color}"/>`;
+    svg += `<text x="${X(Q)}" y="${Y(0)+38}" fill="${color}" font-family="Helvetica" font-size="12" text-anchor="middle">${label}</text>`;
+  }
+
+  guide(Q0,P0,'#dfe4ef', r.policyValid ? 'Qe' : 'Q*');
+
+  if (r.policyValid){
+    guide(r.Q2, r.Pb, 'var(--cs)', 'Qnew');
+    // Pb / Ps labels on axis
+    svg += `<text x="${X(0)-10}" y="${Y(r.Pb)+4}" fill="var(--cs)" font-family="Helvetica" font-size="12" text-anchor="end">Pbuyer</text>`;
+    svg += `<text x="${X(0)-10}" y="${Y(r.Ps)+4}" fill="var(--ps)" font-family="Helvetica" font-size="12" text-anchor="end">Pseller</text>`;
+    svg += `<circle cx="${X(r.Q2)}" cy="${Y(r.Ps)}" r="4" fill="var(--ps)"/>`;
+  } else {
+    svg += `<text x="${X(0)-10}" y="${Y(P0)+4}" fill="#dfe4ef" font-family="Helvetica" font-size="12" text-anchor="end">Pe</text>`;
+  }
+
+  els.svg.innerHTML = svg;
+}
+
+function renderTables(s,r){
+  if (!r.valid){
+    els.tblEq.innerHTML = `<tr><td class="k">—</td><td class="v">ไม่มีจุดดุลยภาพ</td></tr>`;
+    els.tblPolicy.innerHTML='';
+    return;
+  }
+  els.tblEq.innerHTML = `
+    <tr><td class="k">P* (ราคาดุลยภาพ)</td><td class="v">${fmt(r.Pe)}</td></tr>
+    <tr><td class="k">Q* (ปริมาณดุลยภาพ)</td><td class="v">${fmt(r.Qe)}</td></tr>
+    <tr><td class="k">Consumer Surplus</td><td class="v">${fmt(r.CSe)}</td></tr>
+    <tr><td class="k">Producer Surplus</td><td class="v">${fmt(r.PSe)}</td></tr>
+    <tr class="hi"><td class="k">Total Surplus</td><td class="v">${fmt(r.TSe)}</td></tr>
+    <tr><td class="k">Ed ที่จุดดุลยภาพ</td><td class="v">${fmt(r.Ed)}</td></tr>
+    <tr><td class="k">Es ที่จุดดุลยภาพ</td><td class="v">${fmt(r.Es)}</td></tr>
+  `;
+  if (!r.policyValid){
+    els.tblPolicyCap.textContent = 'ผลของนโยบาย';
+    els.tblPolicy.innerHTML = `<tr><td class="k" colspan="2">เลือก "เก็บภาษี" หรือ "ให้เงินอุดหนุน" ทางซ้ายเพื่อดูผลกระทบ</td></tr>`;
+    return;
+  }
+
+  const isTax = r.policy==='tax';
+  els.tblPolicyCap.textContent = isTax ? 'ผลของการเก็บภาษี' : 'ผลของเงินอุดหนุน';
+  els.tblPolicy.innerHTML = `
+    <tr><td class="k">ราคาที่ผู้ซื้อจ่าย (Pbuyer)</td><td class="v">${fmt(r.Pb)}</td></tr>
+    <tr><td class="k">ราคาที่ผู้ขายได้รับ (Pseller)</td><td class="v">${fmt(r.Ps)}</td></tr>
+    <tr><td class="k">ปริมาณใหม่ (Qnew)</td><td class="v">${fmt(r.Q2)}</td></tr>
+    <tr><td class="k">Consumer Surplus ใหม่</td><td class="v">${fmt(r.CS2)}</td></tr>
+    <tr><td class="k">Producer Surplus ใหม่</td><td class="v">${fmt(r.PS2)}</td></tr>
+    <tr class="tax"><td class="k">${isTax?'รายได้ภาษีของรัฐ':'ต้นทุนเงินอุดหนุนของรัฐ'}</td><td class="v">${fmt(r.govt)}</td></tr>
+    <tr class="dwl"><td class="k">Deadweight Loss</td><td class="v">${fmt(r.DWL)}</td></tr>
+    <tr class="hi"><td class="k">Total Surplus ใหม่ (รวมผลต่อรัฐ)</td><td class="v">${fmt(r.TS2)}</td></tr>
+  `;
+}
+
+function update(){
+  const s = readState();
+  document.getElementById('val-a').textContent = fmt(s.a);
+  document.getElementById('val-b').textContent = fmt(s.b);
+  document.getElementById('val-c').textContent = fmt(s.c);
+  document.getElementById('val-d').textContent = fmt(s.d);
+  document.getElementById('val-amount').textContent = fmt(s.amount);
+
+  els.amountField.style.display = s.policy==='none' ? 'none' : 'block';
+  els.amountLabel.firstChild.textContent = s.policy==='tax' ? 'ภาษีต่อหน่วย (t) ' : 'เงินอุดหนุนต่อหน่วย (s) ';
+
+  const r = compute(s);
+
+  els.warn.style.display='none';
+  if (!r.valid){
+    els.warn.style.display='block';
+    els.warn.textContent = 'a ต้องมากกว่า c เพื่อให้เกิดจุดดุลยภาพที่มีค่าเป็นบวก';
+  } else if (s.policy!=='none' && !r.policyValid){
+    els.warn.style.display='block';
+    els.warn.textContent = 'ค่านโยบายสูงเกินไป ทำให้ปริมาณใหม่ติดลบ — ลดค่าลง';
+  }
+
+  buildLegend(r.valid && r.policyValid ? s.policy : 'none');
+  draw(s,r);
+  renderTables(s,r);
+
+  document.getElementById('ed-note').textContent = r.valid
+    ? `Ed ที่จุดดุลยภาพ: ${fmt(r.Ed)} (${Math.abs(r.Ed) > 1 ? 'ยืดหยุ่นมาก' : 'ยืดหยุ่นน้อย'})`
+    : 'Ed ที่จุดดุลยภาพ: —';
+  document.getElementById('es-note').textContent = r.valid
+    ? `Es ที่จุดดุลยภาพ: ${fmt(r.Es)} (${Math.abs(r.Es) > 1 ? 'ยืดหยุ่นมาก' : 'ยืดหยุ่นน้อย'})`
+    : 'Es ที่จุดดุลยภาพ: —';
+}
+
+// a is pinned to its slider max and c to its slider min (0), so the demand
+// and supply lines stretch across the FULL plot area — near the top-left
+// and bottom-left corners respectively — giving a big, clean edge-to-edge
+// "X". b = d keeps the crossing point close to horizontal/vertical center.
+const DEFAULTS = { a: 220, b: 0.6, c: 0, d: 0.6, policy: 'none', amount: 10 };
+
+function resetToDefault(){
+  els.a.value = DEFAULTS.a;
+  els.b.value = DEFAULTS.b;
+  els.c.value = DEFAULTS.c;
+  els.d.value = DEFAULTS.d;
+  els.policy.value = DEFAULTS.policy;
+  els.amount.value = DEFAULTS.amount;
+  update();
+}
+
+['a','b','c','d','amount'].forEach(id=>els[id].addEventListener('input', update));
+els.policy.addEventListener('change', update);
+document.getElementById('reset-btn').addEventListener('click', resetToDefault);
+
+update();
+</script>
+</body>
+</html>
